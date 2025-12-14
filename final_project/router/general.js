@@ -35,8 +35,20 @@ public_users.get('/isbn/:isbn',async function (req, res) {
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  let matches = [];
+  let count = 0;
+  const queriedAuthor = req.params.author;
+  for (const book of Object.values(books)) {
+    if (book.author.toLowerCase() === queriedAuthor.toLowerCase()) {
+        matches.push(book);
+        count++;
+    }
+  }
+
+  if (count === 0){
+    return res.json({ error: 'Our apologies, no hits for that author' });
+  }
+  res.json({ books: matches });
 });
 
 // Get all books based on title
