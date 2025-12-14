@@ -23,7 +23,10 @@ public_users.get('/isbn/:isbn',async function (req, res) {
         const isbns = await getIsbns(book.title, book.author);
             
         if (isbns.includes(targetIsbn)) {
-            return `${book.title} by ${book.author}`;
+            return {
+                disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
+                book: `${book.title} by ${book.author}`
+            };
         }
     }
     return "Not in repository";
@@ -78,6 +81,7 @@ public_users.get('/review/:isbn',async function (req, res) {
             
         if (isbns.includes(targetIsbn)) {
             return {
+                disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
                 message: `Reviews for ${book.title} by ${book.author}`,
                 reviews: book.reviews
             }
