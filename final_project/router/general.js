@@ -70,9 +70,24 @@ public_users.get('/title/:title',function (req, res) {
 });
 
 //  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+public_users.get('/review/:isbn',async function (req, res) {
+    const targetIsbn = req.params.isbn;
+    async function findBookByIsbn() {
+       for (const book of Object.values(books)) {
+        const isbns = await getIsbns(book.title, book.author);
+            
+        if (isbns.includes(targetIsbn)) {
+            return {
+                message: `Reviews for ${book.title} by ${book.author}`,
+                reviews: book.reviews
+            }
+        }
+    }
+    return "Not in repository";
+
+    }
+    const result = await findBookByIsbn();  
+    res.json({ isbn: targetIsbn, result });
 });
 
 module.exports.general = public_users;
