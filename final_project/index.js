@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session')
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
-
+/*
 const users = [];
 
 const doesExist = (username) => {
@@ -32,13 +32,13 @@ const authenticatedUser = (username, password) => {
         return false;
     }
 }
-
+*/
 const app = express();
 app.use(session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}));
 
 
 app.use(express.json());
-
+/*
 // Login endpoint
 app.post("/login", (req, res) => {
     const username = req.body.username;
@@ -86,7 +86,7 @@ app.post("/register", (req, res) => {
     // Return error if username or password is missing
     return res.status(404).json({message: "Unable to register user."});
 });
-
+*/
 
 app.use("/customer/auth/*", function auth(req,res,next){
     // Check if user is logged in and has valid access token

@@ -1,59 +1,95 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
+const express = require('express');  
 let books = require("./booksdb.js");
+const jwt = require('jsonwebtoken'); 
+const session = require('express-session'); 
+const getIsbns = require('./getIsbns.js');
+
+const users = [];
+
+const doesExist = (username) => {
+    let userswithsamename = users.filter((user) => user.username === username);
+    return userswithsamename.length > 0;
+};
+const authenticatedUser = (username, password) => {
+    let validusers = users.filter((user) => 
+        user.username === username && user.password === password
+    );
+    return validusers.length > 0;
+};
+
+const isValid = (username) => {
+    return /^[a-zA-Z0-9_]{4,12}$/.test(username);
+};
+
 const regd_users = express.Router();
 
-let users = [];
-
-const isValid = (username)=>{ 
-    return /^[a-zA-Z0-9_]{4,12}$/.test(username);
-}
-
-const authenticatedUser = (username,password)=>{ 
-    let validusers = users.filter((user) => {
-        return (user.username === username && user.password === password);
-    });
-    // Return true if any valid user is found, otherwise false
-    if (validusers.length > 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-//only registered users can login
-regd_users.post("/login", (req,res) => {
-  const username = req.body.username;
-    const password = req.body.password;
-
-    // Check if username or password is missing
+regd_users.post("/login", (req, res) => {
+    const { username, password } = req.body;
+    
     if (!username || !password) {
         return res.status(404).json({ message: "Error logging in" });
     }
-
-    // Authenticate user
+    
     if (authenticatedUser(username, password)) {
-        // Generate JWT access token
-        let accessToken = jwt.sign({
-            data: password
-        }, 'access', { expiresIn: 60 * 60 });
-
-        // Store access token and username in session
-        req.session.authorization = {
-            accessToken, username
-        }
+        const accessToken = jwt.sign({ data: password }, 'access', { expiresIn: 60 * 60 });
+        req.session.authorization = { accessToken, username };
         return res.status(200).json({ message: "User successfully logged in" });
-
     } else {
         return res.status(208).json({ message: "Invalid Login. Check username and password" });
     }
 });
 
-// Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+regd_users.post("/register", (req, res) => {
+    const { username, password } = req.body;
+    
+    if (username && password && isValid(username)) {
+        if (!doesExist(username)) {
+            users.push({ username, password });
+            return res.status(200).json({ message: "User successfully registered. Now you can login" });
+        } else {
+            return res.status(404).json({ message: "User already exists!" });
+        }
+    }
+    return res.status(404).json({ message: "Unable to register user." });
 });
+
+// Add a book review
+regd_users.put("/auth/review/:isbn", async (req, res) => {
+        const isbn = req.params.isbn;
+        const review = req.body.review;
+        const username = req.user.data;  // From JWT
+        
+        if (!review || !isbn) {
+            return res.status(400).json({ message: "ISBN and review required" });
+        }
+        
+        // Find matching book using your existing logic
+        for (const book of Object.values(books)) {
+            const isbns = await getIsbns(book.title, book.author);
+            
+            if (isbns.includes(isbn)) {
+                // Book found! Now store review
+                const userIndex = module.exports.users.findIndex(u => u.username === username);
+                
+                if (userIndex === -1) {
+                    return res.status(404).json({ message: "User not found" });
+                }
+                
+                if (!module.exports.users[userIndex].reviews) {
+                    module.exports.users[userIndex].reviews = {};
+                }
+                
+                module.exports.users[userIndex].reviews[isbn] = review;
+                
+                return res.status(201).json({ 
+                    message: `Review added for "${book.title}" by ${book.author}` 
+                });
+            }
+        }
+        
+        // No book found
+        return res.status(404).json({ message: `Book with ISBN ${isbn} not found` });
+    });
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
