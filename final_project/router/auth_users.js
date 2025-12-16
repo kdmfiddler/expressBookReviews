@@ -57,18 +57,21 @@ regd_users.post("/register", (req, res) => {
 regd_users.put("/auth/review/:isbn", async (req, res) => {
         const isbn = req.params.isbn;
         const review = req.body.review;
-        const username = req.user.data;  // From JWT
+        const username = req.user.data;  
         
         if (!review || !isbn) {
             return res.status(400).json({ message: "ISBN and review required" });
         }
-        
-        // Find matching book using your existing logic
+        let match = null;
         for (const book of Object.values(books)) {
             const isbns = await getIsbns(book.title, book.author);
             
             if (isbns.includes(isbn)) {
-                // Book found! Now store review
+                
+                match = book;
+                        
+                book.reviews[username] = review;
+                /*
                 const userIndex = module.exports.users.findIndex(u => u.username === username);
                 
                 if (userIndex === -1) {
@@ -80,10 +83,11 @@ regd_users.put("/auth/review/:isbn", async (req, res) => {
                 }
                 
                 module.exports.users[userIndex].reviews[isbn] = review;
-                
+                */
                 return res.status(201).json({ 
                     message: `Review added for "${book.title}" by ${book.author}` 
                 });
+                
             }
         }
         
