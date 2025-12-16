@@ -5,14 +5,28 @@ let users = require("./auth_users.js").users;
 const public_users = express.Router();
 const getIsbns = require('./getIsbns.js');
 
-public_users.post("/register", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
-});
+const doesExist = (username) => {
+    let userswithsamename = users.filter((user) => user.username === username);
+    return userswithsamename.length > 0;
+};
 
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
   res.json(books);
+});
+
+public_users.post("/register", (req, res) => {
+    const { username, password } = req.body;
+    
+    if (username && password && isValid(username)) {
+        if (!doesExist(username)) {
+            users.push({ username, password });
+            return res.status(200).json({ message: "User successfully registered. Now you can login" });
+        } else {
+            return res.status(404).json({ message: "User already exists!" });
+        }
+    }
+    return res.status(404).json({ message: "Unable to register user." });
 });
 
 // Get book details based on ISBN
@@ -25,7 +39,8 @@ public_users.get('/isbn/:isbn',async function (req, res) {
         if (isbns.includes(targetIsbn)) {
             return {
                 disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
-                book: `${book.title} by ${book.author}`
+                book: `${book.title} by ${book.author}`,
+                reviews: book.reviews
             };
         }
     }
