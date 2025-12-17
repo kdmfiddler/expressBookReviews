@@ -132,24 +132,30 @@ public_users.get('/title/:title', async function (req, res) {
     });
 
 //  Get book review
-public_users.get('/review/:isbn',async function (req, res) {
-    const targetIsbn = req.params.isbn;
-    async function findBookByIsbn() {
-       for (const book of Object.values(books)) {
-        const isbns = await getIsbns(book.title, book.author);
+public_users.get('/review/:isbn', async function (req, res) {
+    try{
+        const volumes = await getVolumes();
+        const targetIsbn = req.params.isbn;
+        const result = await findBookByIsbn() {
+            for (const book of Object.values(books)) {
+            const isbns = await getIsbns(book.title, book.author);
             
-        if (isbns.includes(targetIsbn)) {
-            return {
+            if (isbns.includes(targetIsbn)) {
+                return {
                 disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
                 message: `Reviews for ${book.title} by ${book.author}`,
                 reviews: book.reviews
             }
+            else {
+                return "Not in repository";            
+            }
         }
+    catch(error) {
+        res.status(500).json({
+            error: "Module unavailable"
+        })
     }
-    return "Not in repository";
 
-    }
-    const result = await findBookByIsbn();  
     res.json({ isbn: targetIsbn, result });
 });
 
