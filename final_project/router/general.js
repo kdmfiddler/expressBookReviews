@@ -1,3 +1,4 @@
+const getVolumes = require('./booksdb.js').getVolumes;
 const express = require('express');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
@@ -11,8 +12,20 @@ const doesExist = (username) => {
 };
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  res.json(books);
+public_users.get('/', async function (req, res) {
+  try {
+    const volumes = await getVolumes();
+    res.json({
+        message: "Volumes retrieved Asyncronously",
+        volumes
+
+    })
+  }
+  catch(error) {
+    res.status(500).json({
+        error: "Module unavailable, please contact support"
+    })
+  }
 });
 
 public_users.post("/register", (req, res) => {
@@ -52,8 +65,31 @@ public_users.get('/isbn/:isbn',async function (req, res) {
 })
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  let matches = [];
+public_users.get('/author/:author', async function (req, res) {
+    try {
+        const volumes = await getVolumes();
+        let matches = [];
+        let count = 0;
+        const queriedAuthor = req.params.author;
+        for (const volume of Object.values(volumes)) {
+            if (volume.author.toLowerCase() === queriedAuthor.toLowerCase()) {
+                matches.push(volume);
+                count++;
+            }
+        }
+        res.json({
+            message: "Volumes retrieved Asyncronously",
+            matches
+    
+        })
+      }
+      catch(error) {
+        res.status(500).json({
+            error: "Module unavailable, please contact support"
+        })
+      }
+    });
+    /*let matches = [];
   let count = 0;
   const queriedAuthor = req.params.author;
   for (const book of Object.values(books)) {
@@ -67,25 +103,33 @@ public_users.get('/author/:author',function (req, res) {
     return res.json({ error: 'Our apologies, no hits for that author' });
   }
   res.json({ books: matches });
-});
+});*/
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  let matches = [];
-  let count = 0;
-  const queriedTitle = req.params.title;
-  for (const book of Object.values(books)) {
-    if (book.title.toLowerCase() === queriedTitle.toLowerCase()) {
-        matches.push(book);
-        count++;
-    }
-  }
-
-  if (count === 0){
-    return res.json({ error: 'Our apologies, no hits for that title' });
-  }
-  res.json({ books: matches });
-});
+public_users.get('/title/:title', async function (req, res) {
+    try {
+        const volumes = await getVolumes();
+        let matches = [];
+        let count = 0;
+        const queriedTitle = req.params.title;
+        for (const volume of Object.values(volumes)) {
+            if (volume.title.toLowerCase() === queriedTitle.toLowerCase()) {
+                matches.push(volume);
+                count++;
+            }
+        }
+        res.json({
+            message: "Volumes retrieved Asyncronously",
+            matches
+    
+        })
+      }
+      catch(error) {
+        res.status(500).json({
+            error: "Module unavailable, please contact support"
+        })
+      }
+    });
 
 //  Get book review
 public_users.get('/review/:isbn',async function (req, res) {
