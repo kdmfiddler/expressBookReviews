@@ -4,7 +4,7 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
-const getIsbns = require('./getIsbns.js');
+const findIsbn = require('./getIsbns.js');
 
 const doesExist = (username) => {
     let userswithsamename = users.filter((user) => user.username === username);
@@ -46,23 +46,27 @@ public_users.post("/register", (req, res) => {
 public_users.get('/isbn/:isbn',async function (req, res) {
     const targetIsbn = req.params.isbn;
     async function findBookByIsbn() {
-       for (const book of Object.values(books)) {
-        const isbns = await getIsbns(book.title, book.author);
-            
-        if (isbns.includes(targetIsbn)) {
+       for (const book of Object.values(books.books)) {
+        const isbn = await findIsbn(book.title, book.author, targetIsbn);
+        console.log('📚 Checking:', book.title, 'by', book.author);    
+        if (isbn === true) {
+            console.log('match acquired');
             return {
                 disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
                 book: `${book.title} by ${book.author}`,
                 reviews: book.reviews
             };
+            
         }
+    
     }
-    return "Not in repository";
+
+    return 'ISBN Not Found'
 
     }
     const result = await findBookByIsbn();  
     res.json({ isbn: targetIsbn, result });
-})
+});
   
 // Get book details based on author
 public_users.get('/author/:author', async function (req, res) {
@@ -133,30 +137,31 @@ public_users.get('/title/:title', async function (req, res) {
 
 //  Get book review
 public_users.get('/review/:isbn', async function (req, res) {
-    try{
-        const volumes = await getVolumes();
+    try {
         const targetIsbn = req.params.isbn;
-        const result = await findBookByIsbn() {
-            for (const book of Object.values(books)) {
-            const isbns = await getIsbns(book.title, book.author);
+        let result = {
+            message: 'ISBN Unavailable'
+        };
+        for (const book of Object.values(books.books)) {
+            const isbns = await findIsbn(book.title, book.author, targetIsbn);
             
-            if (isbns.includes(targetIsbn)) {
-                return {
+            if (isbns === true) {
+                result = {
                 disclaimer: 'ISBN data missing from course files; ISBN data cross referenced from Google Books API',
                 message: `Reviews for ${book.title} by ${book.author}`,
                 reviews: book.reviews
-            }
-            else {
-                return "Not in repository";            
+                }
+                break;
             }
         }
-    catch(error) {
-        res.status(500).json({
+        res.status(200).json({ isbn: targetIsbn, result });
+        } catch (error) {
+        res.status(404).json({
             error: "Module unavailable"
         })
-    }
-
-    res.json({ isbn: targetIsbn, result });
+    };
 });
+
+
 
 module.exports.general = public_users;
